@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedAI-nEXUS CDSS</title>
+<style>
+:root {
+  --bg: #f4f6fb; --panel: #ffffff; --ink: #172036; --muted: #5d6886; --line: #dde2ee;
+  --accent: #3b5bdb; --accent-ink: #ffffff;
+  --low: #2f9e44; --mod: #e8590c; --high: #c92a2a;
+  --up: #d6336c; --down: #1c7ed6; --chip: #eef1f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1220; --panel: #171c2e; --ink: #e6e9f2; --muted: #98a2bd; --line: #2a3150;
+    --accent: #748ffc; --accent-ink: #0e1220; --chip: #222943;
+    --low: #51cf66; --mod: #ff922b; --high: #ff6b6b; --up: #f06595; --down: #4dabf7;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+  display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
+header h1 { margin: 0; font-size: 20px; }
+header .sub { color: var(--muted); font-size: 13px; }
+main { display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 20px; padding: 20px 24px;
+  max-width: 1400px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.card + .card { margin-top: 16px; }
+h2 { font-size: 15px; margin: 0 0 12px; }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+select, input, button { font: inherit; color: inherit; }
+select, input[type=number] { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+select { flex: 1; min-width: 0; }
+button { border: 1px solid var(--line); background: var(--chip); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+button:disabled { opacity: .6; cursor: wait; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.field label { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field input, .field select { width: 100%; }
+.field input.out { border-color: var(--mod); }
+details summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.muted { color: var(--muted); font-size: 13px; }
+a { color: var(--accent); }
+.result-top { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: center; }
+@media (max-width: 600px) { .result-top { grid-template-columns: 1fr; } }
+.band { display: inline-block; padding: 3px 12px; border-radius: 999px; font-weight: 700; color: #fff; }
+.band.Low { background: var(--low); } .band.Moderate { background: var(--mod); } .band.High { background: var(--high); }
+.warn { background: color-mix(in srgb, var(--mod) 14%, transparent); border-left: 3px solid var(--mod);
+  padding: 6px 10px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
+.bars { display: grid; grid-template-columns: minmax(120px, 210px) 1fr 64px; gap: 4px 10px; align-items: center; font-size: 13px; }
+.bars .track { position: relative; height: 16px; }
+.bars .track::before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; border-left: 1px solid var(--line); }
+.bars .bar { position: absolute; top: 2px; height: 12px; border-radius: 3px; }
+.bars .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .num { text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin: 8px 0 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+td, th { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+th { color: var(--muted); font-weight: 600; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12px;
+  max-height: 340px; overflow: auto; }
+.empty { color: var(--muted); text-align: center; padding: 40px 10px; }
+.disclaimer { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 24px 24px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.metric { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.metric b { display: block; font-size: 18px; }
+.metric span { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>MedAI-nEXUS CDSS</h1>
+  <span class="sub" id="subtitle">Explainable, FHIR-interoperable clinical decision support</span>
+</header>
+
+<main>
+  <section>
+    <div class="card">
+      <h2>Patient input</h2>
+      <div class="row">
+        <select id="example" aria-label="Example patient"><option value="">Load a held-out test patient…</option></select>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="muted" for="fhirFile">or import a FHIR R4 Bundle:</label>
+        <input type="file" id="fhirFile" accept=".json,application/fhir+json,application/json">
+      </div>
+      <div id="fields"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="run">Assess risk</button>
+        <button id="reset">Reset to population median</button>
+      </div>
+      <p class="muted">Blank fields are imputed with the training median and flagged in the explanation.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="card" id="result"><div class="empty">Load a patient or enter values, then select <b>Assess risk</b>.</div></div>
+
+    <div class="card">
+      <h2>Model card</h2>
+      <div id="modelcard" class="muted">Loading…</div>
+    </div>
+  </section>
+</main>
+<p class="disclaimer">Research prototype for MedAI-nEXUS 2026 (Track B). Not a medical device; outputs support, and never replace, clinical judgement.</p>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const pct = (v) => v == null ? "–" : v > 0.999 ? ">99.9%" : v < 0.001 ? "<0.1%" : (v * 100).toFixed(1) + "%";
+const num = (v, d = 3) => v == null ? "–" : v.toFixed(d);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let META = null;
+let currentPatient = null;
+
+async function init() {
+  META = await (await fetch("/api/meta")).json();
+  $("#subtitle").textContent = `Explainable, FHIR-interoperable clinical decision support · risk of ${META.outcome_text} · ${META.dataset.name}`;
+  renderFields();
+  renderModelCard();
+  const sel = $("#example");
+  META.examples.forEach((e, i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = `${e.id}  (actual: ${e.label})`;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => {
+    if (sel.value === "") return;
+    const e = META.examples[+sel.value];
+    fill(e.features); currentPatient = "Patient/" + e.id; assess();
+  };
+  $("#run").onclick = assess;
+  $("#reset").onclick = () => { fill(Object.fromEntries(META.features.map(f => [f.name, f.median]))); currentPatient = null; sel.value = ""; };
+  $("#fhirFile").onchange = importFhir;
+}
+
+function control(f) {
+  const attrs = `id="f-${esc(f.key)}" data-name="${esc(f.name)}"`;
+  if (f.options) {
+    const opts = Object.entries(f.options).sort((a, b) => +a[0] - +b[0])
+      .map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join("");
+    return `<select ${attrs}><option value="">— not recorded —</option>${opts}</select>`;
+  }
+  return `<input type="number" step="any" ${attrs} placeholder="${+f.median.toPrecision(4)}">`;
+}
+
+function renderFields() {
+  const groups = {};
+  META.features.forEach(f => (groups[f.group] ||= []).push(f));
+  $("#fields").innerHTML = Object.entries(groups).map(([g, fs]) => `
+    <details open><summary>${esc(g)} (${fs.length})</summary>
+      <div class="fields">${fs.map(f => `
+        <div class="field" title="${esc(f.help || f.label)}${f.options ? "" : " · typical " + (+f.p05.toPrecision(3)) + "–" + (+f.p95.toPrecision(3))}">
+          <label for="f-${esc(f.key)}">${esc(f.label)}${f.unit ? " (" + esc(f.unit) + ")" : ""}</label>
+          ${control(f)}
+        </div>`).join("")}
+      </div>
+    </details>`).join("");
+  document.querySelectorAll("#fields input").forEach(inp => inp.oninput = () => flagRange(inp));
+}
+
+function flagRange(el) {
+  if (el.tagName !== "INPUT") return;
+  const f = META.features.find(x => x.name === el.dataset.name);
+  const v = parseFloat(el.value);
+  el.classList.toggle("out", !isNaN(v) && (v < f.min || v > f.max));
+}
+
+function fill(values) {
+  document.querySelectorAll("#fields [data-name]").forEach(el => {
+    const v = values[el.dataset.name];
+    el.value = v === undefined || v === null ? "" : (el.tagName === "SELECT" ? String(Math.round(+v)) : +(+v).toPrecision(6));
+    flagRange(el);
+  });
+}
+
+function readForm() {
+  const out = {};
+  document.querySelectorAll("#fields [data-name]").forEach(el => { if (el.value !== "") out[el.dataset.name] = parseFloat(el.value); });
+  return out;
+}
+
+async function call(url, body) {
+  const btn = $("#run"); btn.disabled = true; btn.textContent = "Assessing…";
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    renderResult(data);
+    return data;
+  } catch (e) {
+    $("#result").innerHTML = `<div class="warn">${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; btn.textContent = "Assess risk"; }
+}
+
+const assess = () => call("/api/predict", { features: readForm(), patient: currentPatient });
+
+async function importFhir(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  ev.target.value = "";
+  let bundle;
+  try { bundle = JSON.parse(await file.text()); }
+  catch { $("#result").innerHTML = `<div class="warn">That file is not valid JSON.</div>`; return; }
+  $("#example").value = "";
+  currentPatient = (bundle.entry || []).map(e => e.resource).filter(r => r && r.resourceType === "Patient").map(r => "Patient/" + r.id)[0] || null;
+  const data = await call("/api/fhir", bundle);
+  // Mirror the values the server recognised into the form so they can be edited and re-run.
+  if (data) fill(Object.fromEntries(data.contributions.filter(c => !c.imputed).map(c => [c.name, c.value])));
+}
+
+function gauge(p, t, h) {
+  // Semicircular gauge, 0 at left, 1 at right, coloured by risk band.
+  const R = 80, cx = 100, cy = 95;
+  const pt = (v) => { const a = Math.PI * (1 - v); return [cx + R * Math.cos(a), cy - R * Math.sin(a)]; };
+  const arc = (a, b, color) => { const [x1, y1] = pt(a), [x2, y2] = pt(b);
+    return `<path d="M${x1},${y1} A${R},${R} 0 0 1 ${x2},${y2}" stroke="${color}" stroke-width="16" fill="none"/>`; };
+  const [nx, ny] = pt(p);
+  return `<svg viewBox="0 0 200 120" width="220" role="img" aria-label="Risk ${pct(p)}">
+    ${arc(0, t, "var(--low)")}${arc(t, h, "var(--mod)")}${arc(h, 1, "var(--high)")}
+    <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="var(--ink)"/>
+    <text x="${cx}" y="${cy + 22}" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">${pct(p)}</text>
+  </svg>`;
+}
+
+function renderResult(r) {
+  const top = r.contributions.slice(0, 12);
+  const maxAbs = Math.max(...top.map(c => Math.abs(c.impact)), 1e-6);
+  const bars = top.map(c => {
+    const w = Math.abs(c.impact) / maxAbs * 50;
+    const left = c.impact >= 0 ? 50 : 50 - w;
+    return `<div class="name" title="${esc(c.label)} = ${esc(c.display)}">${esc(c.label)} <span class="muted">= ${esc(c.display)}${c.imputed ? " (imputed)" : ""}</span></div>
+      <div class="track"><div class="bar" style="left:${left}%;width:${w}%;background:var(${c.impact >= 0 ? "--up" : "--down"})"></div></div>
+      <div class="num">${c.impact >= 0 ? "+" : "−"}${(Math.abs(c.impact) * 100).toFixed(1)}</div>`;
+  }).join("");
+  const sum = r.contributions.reduce((a, c) => a + c.impact, 0);
+  const json = JSON.stringify(r.fhir, null, 2);
+  $("#result").innerHTML = `
+    <h2>Risk assessment ${currentPatient ? `<span class="muted">· ${esc(currentPatient)}</span>` : ""}</h2>
+    <div class="result-top">
+      ${gauge(r.probability, r.threshold, r.high_risk)}
+      <div>
+        <div><span class="band ${r.band}">${r.band} risk</span>
+          <span class="muted">&nbsp;Probability of ${esc(r.outcome_text)}: <b>${pct(r.probability)}</b></span></div>
+        <p>${esc(r.recommendation)}</p>
+        <div class="muted">Bands: low &lt; ${pct(r.threshold)} (screening cut-off, ≥${Math.round(META.target_sensitivity * 100)}% sensitivity) ≤ moderate &lt; ${pct(r.high_risk)} ≤ high (≥95% specificity)</div>
+        ${r.warnings.map(w => `<div class="warn">${esc(w)}</div>`).join("")}
+      </div>
+    </div>
+    <h3>Why? Patient-level explanation (Shapley values)</h3>
+    <div class="muted">Average patient risk ${pct(r.baseline)} ${sum >= 0 ? "+" : "−"} ${(Math.abs(sum) * 100).toFixed(1)} pts from this patient's features ≈ ${pct(r.probability)}</div>
+    <div class="legend"><span><i style="background:var(--up)"></i>raises risk</span><span><i style="background:var(--down)"></i>lowers risk</span><span>values in risk points (%)</span></div>
+    <div class="bars">${bars}</div>
+    <details style="margin-top:14px"><summary>FHIR R4 RiskAssessment (interoperable output)</summary>
+      <div class="row" style="margin:6px 0"><button id="copyFhir">Copy JSON</button><button id="dlFhir">Download</button></div>
+      <pre>${esc(json)}</pre>
+    </details>`;
+  $("#copyFhir").onclick = () => navigator.clipboard.writeText(json);
+  $("#dlFhir").onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json], { type: "application/fhir+json" }));
+    a.download = "RiskAssessment.json"; a.click();
+  };
+}
+
+function renderModelCard() {
+  const m = META.metrics, d = META.dataset;
+  const tile = (v, l) => `<div class="metric"><b>${v}</b><span>${l}</span></div>`;
+  $("#modelcard").innerHTML = `
+    <p style="margin-top:0"><b>${esc(META.model_name)}</b>, selected on a validation set and evaluated on
+      ${d.n_test.toLocaleString()} held-out people.
+      Data: <a href="${esc(d.source)}" target="_blank" rel="noopener">${esc(d.name)}</a>
+      (n=${d.n.toLocaleString()}, ${d.n_features} features, ${pct(d.prevalence)} positive, ${esc(d.license)}).</p>
+    <div class="metrics">
+      ${tile(num(m.auroc), "AUROC")}${tile(num(m.auprc), "AUPRC")}${tile(num(m.brier), "Brier score")}
+      ${tile(pct(m.sensitivity), "Sensitivity")}${tile(pct(m.specificity), "Specificity")}
+      ${tile(pct(m.ppv), "PPV")}${tile(pct(m.npv), "NPV")}${tile(pct(m.flag_rate), "Flagged for testing")}
+    </div>
+    <h3>Model comparison (validation set)</h3>
+    <table><tr><th>Model</th><th class="n">AUROC</th><th class="n">AUPRC</th><th class="n">Brier</th><th class="n">Fit (s)</th></tr>
+      ${META.model_comparison.map(c => `<tr><td>${esc(c.model)}</td><td class="n">${num(c.auroc, 4)}</td><td class="n">${num(c.auprc, 4)}</td><td class="n">${num(c.brier, 4)}</td><td class="n">${c.fit_seconds}</td></tr>`).join("")}
+    </table>
+    ${META.fairness.length ? `<h3>Fairness audit (test set)</h3>
+    <table><tr><th>Subgroup</th><th class="n">n</th><th class="n">Prevalence</th><th class="n">AUROC</th><th class="n">Sens.</th><th class="n">Spec.</th></tr>
+      ${META.fairness.map(f => `<tr><td>${esc(f.attribute)}: ${esc(f.group)}</td><td class="n">${f.n.toLocaleString()}</td><td class="n">${pct(f.prevalence)}</td><td class="n">${num(f.auroc)}</td><td class="n">${pct(f.sensitivity)}</td><td class="n">${pct(f.specificity)}</td></tr>`).join("")}
+    </table>` : ""}
+    <p class="muted">Test confusion matrix: TP ${m.confusion.tp.toLocaleString()} · FN ${m.confusion.fn.toLocaleString()} · FP ${m.confusion.fp.toLocaleString()} · TN ${m.confusion.tn.toLocaleString()}</p>`;
+}
+
+init();
+</script>
+</body>
+</html>
