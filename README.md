@@ -1,42 +1,42 @@
 # MedAI-nEXUS CDSS: Diabetes Risk Screening
 
-A clinical decision support tool that estimates how likely someone is to have diabetes or prediabetes, using details a clinic already has on file: blood pressure, cholesterol, BMI, age, lifestyle and so on. It explains every prediction, checks itself for fairness across groups, and reads and writes HL7 FHIR R4 so it can talk to hospital systems.
+Give it a few routine health details (blood pressure, cholesterol, BMI, age, a handful of lifestyle answers) and it tells you how likely that person is to have diabetes or prediabetes. The percentage comes with reasons attached. We also checked whether it treats different groups fairly, and since it speaks HL7 FHIR R4, hospital software can send it data and read what comes back.
 
 Built for **MedAI-nEXUS 2026** (Track B: AI-Driven Clinical Decision Support), SCOPE, VIT Vellore.
 
 **Demo video:** [Google Drive](https://drive.google.com/file/d/1kr9XcrdjecHLGDs4pERtti0Mm-rfw0sp/view?usp=sharing)
 
-> Research prototype for learning and demonstration. Not a medical device, and not meant for diagnosing real patients.
+> A student research prototype. It is not a medical device, so please don't use it to diagnose anyone.
 
 ## Why
 
-Blood tests for diabetes are cheap. Deciding who should get one first is the hard part, especially in a busy clinic. This tool ranks patients by risk so the people most likely to need a test get one sooner.
+A diabetes blood test costs next to nothing. Getting the right people to take one is another matter, particularly when a clinic has fifty patients waiting and two doctors. So we rank patients by risk, and whoever looks most likely to need the test gets it first.
 
 ## What it does
 
-- **Predict.** A gradient-boosting model with isotonic calibration gives a risk percentage you can take at face value (a predicted 30% means roughly 30 in 100 such people really have the condition).
-- **Classify.** Two cut-offs, picked on the validation set, sort patients into Low (< 14.1%), Moderate, or High (≥ 39.0%), each with a suggested next step.
-- **Explain.** Shapley values show how many percentage points each feature added to or took away from a patient's risk. They add up to the final number.
-- **Audit.** Sensitivity, specificity and AUROC are reported separately by sex, age band and income band.
-- **Connect.** Takes a FHIR R4 `Bundle` of `Observation`s as input (BMI matched by LOINC 39156-5) and returns a FHIR `RiskAssessment`.
+- **Predict.** Under the hood it's gradient boosting, with isotonic calibration added so the output behaves like an honest probability: out of 100 people scored at 30%, about 30 should actually turn out positive.
+- **Classify.** Low sits below 14.1% and High starts at 39.0%; anything between is Moderate. Both lines were tuned on the validation set, and each band carries its own suggested next step.
+- **Explain.** Why did this patient score 54%? Shapley values answer that in percentage points per feature, and the pieces sum to the final figure.
+- **Audit.** We don't stop at one overall score. AUROC, sensitivity and specificity are broken out by sex, by age band and by income band.
+- **Connect.** Feed it a FHIR R4 `Bundle` of `Observation`s (it finds BMI through LOINC code 39156-5) and you get a FHIR `RiskAssessment` back.
 
 ## Results
 
-Measured once on 38,052 held-out test patients:
+Scored a single time, on 38,052 patients the model never saw during training:
 
 | AUROC | Sensitivity | Specificity | NPV | Brier |
 |---|---|---|---|---|
 | 0.828 | 79.5% | 71.0% | 95.5% | 0.097 |
 
-Gradient boosting (0.833 validation AUROC) narrowly beat a random forest (0.830) and logistic regression (0.825). The fairness audit found the model performs about the same for women and men, but with one shared cut-off it catches only 45.5% of cases in adults aged 18–44, where diabetes is rare. Age-specific cut-offs are the planned fix.
+Three models went head to head on validation. Gradient boosting took it with 0.833 AUROC, though random forest (0.830) and logistic regression (0.825) were close behind. On fairness, women and men get roughly equal treatment. Young adults don't. With a single cut-off for everyone, the model spots just 45.5% of cases among 18 to 44-year-olds (diabetes is uncommon at that age, so their scores rarely cross the line), and we plan to fix that with separate cut-offs per age group.
 
 ## Data
 
-[CDC Diabetes Health Indicators](https://archive.ics.uci.edu/dataset/891/cdc+diabetes+health+indicators) (UCI #891), from the US BRFSS 2015 survey: 253,680 adults, 21 features, 13.9% positive, no missing values. `train.py` downloads it automatically on the first run.
+We trained on the [CDC Diabetes Health Indicators](https://archive.ics.uci.edu/dataset/891/cdc+diabetes+health+indicators) dataset, number 891 on UCI. It's drawn from the US BRFSS phone survey of 2015. That gives 253,680 adults with 21 features each; 13.9% are positive and nothing is missing. You don't need to fetch it yourself, because `train.py` grabs it the first time it runs.
 
 ## Getting started
 
-You need Python 3.10 or newer.
+Python 3.10 or later is required.
 
 ```bash
 pip install -r requirements.txt
@@ -44,19 +44,19 @@ python train.py
 python app.py
 ```
 
-Training takes around 30 seconds. It saves the model to `artifacts/`, charts and metrics to `reports/`, and example patients plus FHIR sample files to `samples/`. Once the app is running, open http://127.0.0.1:5000.
+Expect training to finish in roughly half a minute. Afterwards the model is in `artifacts/`, charts and metrics are in `reports/`, and `samples/` holds example patients and FHIR files. With the app up, point your browser at http://127.0.0.1:5000.
 
-To run the tests:
+Tests:
 
 ```bash
 python -m unittest discover tests
 ```
 
-`train.py` also accepts `--dataset breast-cancer`, or `--csv your.csv --target column` to train on another tabular dataset with a yes/no outcome.
+Want a different dataset? Pass `--dataset breast-cancer`, or bring your own CSV with `--csv your.csv --target column` (any yes/no outcome column will do).
 
 ## Using the app
 
-Load a held-out test patient from the dropdown (its true outcome is shown), upload a FHIR Bundle from `samples/`, or fill in the form yourself. Press **Assess risk** to see the gauge, risk band, recommendation, the "Why?" chart and the FHIR output. Change an input, say general health, and run it again to watch the risk move. The model card and the fairness table are further down the page.
+There are three ways to get a patient in. You can pick one of the held-out test cases from the dropdown, which also shows whether they really had diabetes; upload a FHIR Bundle from `samples/`; or just type values into the form. Hit **Assess risk**. Out comes a gauge, the band, a recommendation, a "Why?" chart and the FHIR output. Try nudging general health from Poor to Excellent and running it again, the number drops quite a bit. Scroll further for the model card and fairness table.
 
 ### API
 
@@ -82,7 +82,7 @@ tests/         end-to-end tests
 
 ## Limitations
 
-The data is self-reported, cross-sectional and from the US. People in India tend to develop diabetes at a lower BMI, so the model would need recalibrating and validating on Indian cohorts (ICMR-INDIAB, for instance) before any real use. No lab values are included either; adding HbA1c or fasting glucose where available should help.
+Everything here was learned from self-reported answers, collected once, in the US. That matters. Indians often develop diabetes at a lower BMI than Americans do, so before this goes near a real clinic it would have to be recalibrated and validated on Indian cohorts such as ICMR-INDIAB. There are no lab values in the data either. Adding HbA1c or fasting glucose, wherever a clinic has them, ought to lift accuracy.
 
 ## Team
 
